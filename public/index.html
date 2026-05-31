@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社交情绪温度计</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body data-theme="default">
+    <div class="container">
+        <header>
+            <h1>🌡️ 社交情绪温度计</h1>
+            <div id="userInfo" class="user-info" style="display: none;">
+                <div class="theme-switcher">
+                    <button class="theme-btn" data-theme="default" title="默认主题">🎨</button>
+                    <button class="theme-btn" data-theme="sunset" title="日落主题">🌅</button>
+                    <button class="theme-btn" data-theme="ocean" title="海洋主题">🌊</button>
+                    <button class="theme-btn" data-theme="forest" title="森林主题">🌲</button>
+                    <button class="theme-btn" data-theme="candy" title="糖果主题">🍬</button>
+                </div>
+                <span id="nicknameDisplay"></span>
+                <button onclick="logout()" class="btn-logout">退出</button>
+            </div>
+        </header>
+
+        <div id="authPage" class="page">
+            <div class="auth-tabs">
+                <button class="tab-btn active" onclick="switchTab('login')">登录</button>
+                <button class="tab-btn" onclick="switchTab('register')">注册</button>
+            </div>
+            
+            <div id="loginForm" class="auth-form">
+                <input type="text" id="loginUsername" placeholder="用户名">
+                <input type="password" id="loginPassword" placeholder="密码">
+                <button onclick="login()" class="btn-primary">登录</button>
+            </div>
+            
+            <div id="registerForm" class="auth-form" style="display: none;">
+                <input type="text" id="regUsername" placeholder="用户名">
+                <input type="text" id="regNickname" placeholder="昵称">
+                <input type="password" id="regPassword" placeholder="密码">
+                <button onclick="register()" class="btn-primary">注册</button>
+            </div>
+            
+            <div id="authError" class="error-msg" style="display: none;"></div>
+        </div>
+
+        <div id="mainPage" class="page" style="display: none;">
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchNav('mood')">情绪打卡</button>
+                <button class="nav-tab" onclick="switchNav('chart')">我的曲线</button>
+                <button class="nav-tab" onclick="switchNav('breathe')">正念呼吸</button>
+                <button class="nav-tab" onclick="switchNav('friends')">好友动态</button>
+            </div>
+
+            <div id="moodSection" class="section">
+                <div class="mood-card">
+                    <h2>今日情绪打卡</h2>
+                    <div class="mood-selector">
+                        <div class="mood-option" data-level="1">😢<br><span>低落</span></div>
+                        <div class="mood-option" data-level="2">😐<br><span>一般</span></div>
+                        <div class="mood-option" data-level="3">🙂<br><span>还好</span></div>
+                        <div class="mood-option" data-level="4">😊<br><span>不错</span></div>
+                        <div class="mood-option" data-level="5">😄<br><span>很棒</span></div>
+                    </div>
+                    <textarea id="moodNote" placeholder="写下今天的心情日记..." oninput="analyzeMoodText()"></textarea>
+                    
+                    <div id="emotionAnalysis" class="emotion-analysis" style="display: none;">
+                        <div class="analysis-header">
+                            <span>🤖 AI情绪分析</span>
+                        </div>
+                        <div class="analysis-tags" id="emotionTags"></div>
+                        <div class="primary-emotion" id="primaryEmotion"></div>
+                    </div>
+                    
+                    <button onclick="saveMood()" class="btn-primary">保存今日心情</button>
+                    <div id="moodStatus" class="status-msg" style="display: none;"></div>
+                </div>
+
+                <div class="encouragement-card">
+                    <h3>💌 收到的鼓励</h3>
+                    <div id="encouragementList" class="encouragement-list">
+                    </div>
+                </div>
+            </div>
+
+            <div id="chartSection" class="section" style="display: none;">
+                <div class="chart-card">
+                    <h2>我的情绪曲线</h2>
+                    <canvas id="moodChart"></canvas>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">近30天平均</span>
+                            <span id="avgMood" class="stat-value">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">最高情绪</span>
+                            <span id="maxMood" class="stat-value">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">最低情绪</span>
+                            <span id="minMood" class="stat-value">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="breatheSection" class="section" style="display: none;">
+                <div class="breathe-card">
+                    <h2>🧘 正念呼吸练习</h2>
+                    <p class="breathe-intro">通过深呼吸放松身心，让心灵回归平静</p>
+                    
+                    <div class="breathe-circle-container">
+                        <div class="breathe-circle" id="breatheCircle">
+                            <span id="breatheText">准备开始</span>
+                        </div>
+                    </div>
+                    
+                    <div class="breathe-controls">
+                        <div class="breathe-mode">
+                            <label>练习模式：</label>
+                            <select id="breatheMode">
+                                <option value="4-7-8">4-7-8 呼吸法 (4秒吸气-7秒屏气-8秒呼气)</option>
+                                <option value="box">箱式呼吸 (4秒吸气-4秒屏气-4秒呼气-4秒屏气)</option>
+                                <option value="simple">简单呼吸 (5秒吸气-5秒呼气)</option>
+                            </select>
+                        </div>
+                        <div class="breathe-buttons">
+                            <button onclick="startBreathing()" class="btn-primary" id="startBtn">开始练习</button>
+                            <button onclick="stopBreathing()" class="btn-secondary" id="stopBtn" style="display: none;">停止</button>
+                        </div>
+                    </div>
+                    
+                    <div class="breathe-timer" id="breatheTimer" style="display: none;">
+                        <span>练习时长：</span>
+                        <span id="timerDisplay">00:00</span>
+                    </div>
+                    
+                    <div class="breathe-tips">
+                        <h4>💡 呼吸练习小贴士</h4>
+                        <ul>
+                            <li>找一个安静舒适的地方坐下</li>
+                            <li>保持背部挺直，放松肩膀</li>
+                            <li>用鼻子吸气，用嘴巴呼气</li>
+                            <li>专注于呼吸的感觉</li>
+                            <li>如果分心了，轻轻地把注意力带回到呼吸上</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="friendsSection" class="section" style="display: none;">
+                <div class="add-friend-card">
+                    <h3>添加好友</h3>
+                    <div class="add-friend-input">
+                        <input type="text" id="friendUsername" placeholder="输入好友用户名">
+                        <button onclick="addFriend()" class="btn-primary">添加</button>
+                    </div>
+                    <div id="friendStatus" class="status-msg" style="display: none;"></div>
+                </div>
+
+                <div class="friends-moods">
+                    <h3>好友情绪趋势</h3>
+                    <div id="friendsMoodList" class="friends-list">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="encourageModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>发送鼓励</h3>
+            <p id="encourageTo"></p>
+            <textarea id="encourageMessage" placeholder="写下鼓励的话语..."></textarea>
+            <label class="checkbox-label">
+                <input type="checkbox" id="isAnonymous" checked>
+                匿名发送
+            </label>
+            <div class="modal-buttons">
+                <button onclick="closeModal()" class="btn-secondary">取消</button>
+                <button onclick="sendEncouragement()" class="btn-primary">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
